@@ -1,12 +1,9 @@
 package com.evgemba.securitypractice.filter;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
-import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.evgemba.securitypractice.security.JWTDecoder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.util.Pair;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +14,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,24 +31,16 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Slf4j
 public class CustomAuthorizationFilter extends OncePerRequestFilter {
 
-    private DecodedJWT getDecodedJWTFromHttpAuthHeader(String authorizationHeader) {
-        String token = authorizationHeader.substring("Bearer ".length());
-        String secretKey = "secret";
-        Algorithm algorithm = Algorithm.HMAC256(secretKey.getBytes());
-        JWTVerifier verifier = JWT.require(algorithm).build();
-        return verifier.verify(token);
-    }
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if(request.getServletPath().equals("/api/login")) {
+        if(request.getServletPath().equals("/api/login") || request.getServletPath().equals("/api/token/refresh")) {
             filterChain.doFilter(request, response);
             return;
         }
         String authorizationHeader = request.getHeader(AUTHORIZATION);
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             try {
-                DecodedJWT decodedJWT = getDecodedJWTFromHttpAuthHeader(authorizationHeader);
+                DecodedJWT decodedJWT = JWTDecoder.getDecodedJWTFromHttpAuthHeader(authorizationHeader);
                 String username = decodedJWT.getSubject();
                 String[] roles = decodedJWT.getClaim("roles").asArray(String.class);
                 Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
@@ -66,7 +56,7 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
                 response.setStatus(FORBIDDEN.value());
                 response.setContentType(APPLICATION_JSON_VALUE);
                 new ObjectMapper().writeValue(response.getOutputStream(),
-                        Pair.of("errorMessage", exception.getMessage()));
+                        new AbstractMap.SimpleEntry<>("errorMessage", exception.getMessage()));
                 return;
             }
         }

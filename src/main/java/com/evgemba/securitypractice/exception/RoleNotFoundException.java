@@ -1,10 +1,15 @@
 package com.evgemba.securitypractice.exception;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
 /**
  * @author Evgeniy
  * @since 16.10.2022
  */
-public class RoleNotFoundException extends Exception{
+
+@ResponseStatus(HttpStatus.NOT_FOUND)
+public class RoleNotFoundException extends RuntimeException{
     public RoleNotFoundException(String message) {
         super(message);
     }

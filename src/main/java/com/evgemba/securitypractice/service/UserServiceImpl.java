@@ -66,7 +66,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public void addRoleToUser(String username, String roleName) throws UserNotFoundException, RoleNotFoundException {
+    public void addRoleToUser(String username, String roleName) {
         log.info("Adding role " + roleName + " to user " + username);
         User user = userRepo.findByUsername(username).
                 orElseThrow(() -> new UserNotFoundException("Username " + username + " not found"));
